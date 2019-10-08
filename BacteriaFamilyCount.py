@@ -2,10 +2,12 @@ import tkinter as tk
 
 from tkinter import *
 from tkinter.filedialog import askopenfilename
+import tkinter.filedialog
 
 import pandas as pd
 
 from csv import reader
+import csv
 
 #initialize application window
 
@@ -76,31 +78,36 @@ def printDataCallback():
     LoadData.dictionary = familyNameDictionary
 
     
-
+    """draw bar graph windows"""
     root = tk.Tk()
     root.title(LoadData.fileName)
 
+    """draw canvas dimetions"""
     c_width = 800  # Define it's width
     c_height = 700  # Define it's height
     c = tk.Canvas(root, width=c_width, height=c_height, bg='white')
     c.pack()
 
-    # The variables below size the bar graph
-    LeftCanvasGap = 10
-    barWidth = 20
-    barGap = 20
-    barLengthPerUnit = 40
+    """ The variables below size the bar graph"""
+    LeftCanvasGap = 10 #left margin
+    barWidth = 20 #Height of each bar
+    barGap = 20 #distance between each bar
+    barLengthPerUnit = 40 #Width of each bar per value
     counter = 0
 
-    
+    """List containing keys to remove"""
+    singleKeyList = []
 
     # A quick for loop to calculate the rectangle
+    """filter out single instance data"""
     for key in LoadData.dictionary:
 
         DataValue = LoadData.dictionary[key]
-
+        """if single instance found"""
         if DataValue == 1:
+            """increase count of total single instances"""
             familyNameDictionary["Single Instance Families"] = familyNameDictionary["Single Instance Families"] + 1
+            singleKeyList.append(key)
             continue
 
         entry = counter
@@ -126,6 +133,25 @@ def printDataCallback():
 
         counter = counter + 1
 
+    for key in singleKeyList:
+        """remove single instance from dictionary"""
+        LoadData.dictionary.pop(key)
+
+"""Funtion for sile save dialogue"""
+def saveFileCallback():
+    f = tkinter.filedialog.asksaveasfile(mode='w', filetypes = (("csv files","*.csv"),("all files","*.*")))
+    if f is None: # asksaveasfile return `None` if dialog closed with "cancel".
+        return
+
+    fileName = f.name + ".csv"
+
+    with open(fileName, 'w') as file:
+        for key in LoadData.dictionary.keys():
+            file.write("%s,%s\n"%(key,LoadData.dictionary[key]))
+   
+  
+
+    
 
 """load File button"""
 loadFileButton = tk.Button(text="Load File", command = loadFileCallback) .grid(row=3, column=1, sticky=W)
@@ -133,7 +159,8 @@ loadFileButton = tk.Button(text="Load File", command = loadFileCallback) .grid(r
 """diaplay Data""" 
 displayButton = tk.Button(text="Process And Display Family Data", command = printDataCallback) .grid(row=5, column=1, sticky=W)
 
-"""bar graphg info"""
+"""Save file button"""
+saveButton = tk.Button(text="Save File", command = saveFileCallback) .grid(row=7, column=1, sticky=W)
 
 
 """appliction main loop"""
