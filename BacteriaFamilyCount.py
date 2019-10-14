@@ -8,6 +8,9 @@ import pandas as pd
 
 from csv import reader
 import csv
+import re
+
+import matplotlib.pyplot as plt
 
 #initialize application window
 
@@ -32,6 +35,7 @@ class FileData:
         self.data = 0
         self.dictionary = 0
         self.fileName = 0
+        self.extractData = 0 #sorted list of tuples
 
 """Initialize a data storage object"""
 LoadData = FileData()
@@ -45,37 +49,61 @@ def loadFileCallback():
     
     """Using try in case user types in unknown file or closes without choosing a file."""
     try:
-        df = pd.read_csv(name, delimiter=r"\s+")
-        LoadData.data = df
-        LoadData.fileName = name.split("/")[-1]
-        print("File Data Loaded ",name)
+        df = pd.read_csv(name, sep=r'[ \t]{2,}', engine='python')
+        """load File name into object"""
+        splitName = name.split("/")[-1]
+        LoadData.fileName = splitName
+        """list for holding family name and %total reads"""
+        readDataList = []
+        """interate through dataframe and pick out "Family" and "% of total reads" """
+        """parse % of total reads' pick out first sets of digits then decimal then digists turn into float"""
+        for index, row in df.iterrows():
+            value = float(re.findall("\d+\.\d+",row['% of total reads'])[0])
+            dataTuple = [row['Family'],value]
+            """load tuple into readDataList"""
+            readDataList.append(dataTuple)
 
-   
     except:
-        print("No file exists")
+        print("Error No data loaded")
+   
+    DataColationDict = {}
+
+    """iterate through readDataList and group data inside dictionary"""
+
+    for dataTuple in readDataList:
+        
+        
+        if dataTuple[0] in DataColationDict:
+            """add value to total and round to two digits"""
+            DataColationDict[dataTuple[0]] = round((DataColationDict[dataTuple[0]] + dataTuple[1]), 2)
+            
+        else:
+            
+            DataColationDict[dataTuple[0]] = dataTuple[1]
+            
+    
+    """turn dictionary into list"""
+    colateList = []
+
+    for key in DataColationDict:
+        temp = [key,DataColationDict[key]]
+        colateList.append(temp)
+
+    """sort list by tuple[1] value"""
+    tempList = sorted(colateList, key=lambda x: x[1])
+
+    sortedColateList = []
+    """reverse sorted list"""
+    for item in reversed(tempList):
+        sortedColateList.append(item)
+
+    LoadData.extractData = sortedColateList
+
+    print("File Data Loaded ",name)
 
 """Print out object"""
 def printDataCallback():
-    """dump dataframe family column into a list"""
-    familyList = LoadData.data['Family'].tolist()
-
-    """create an instance counter dictionary"""
-    familyNameDictionary = {}
-
-    
-    """iterate through family name list and pick out unique instances load
-        them into the dictionary"""
-    for familyName in familyList:
-        if familyName in familyNameDictionary:
-            familyNameDictionary[familyName] = familyNameDictionary[familyName] + 1
-            
-
-        else:
-            familyNameDictionary[familyName] = 1  
-            
-    familyNameDictionary["Single Instance Families"] = 0
-
-    LoadData.dictionary = familyNameDictionary
+    data = LoadData.extractData
 
     
     """draw bar graph windows"""
@@ -84,15 +112,15 @@ def printDataCallback():
 
     """draw canvas dimetions"""
     c_width = 800  # Define it's width
-    c_height = 700  # Define it's height
+    c_height = 1000  # Define it's height
     c = tk.Canvas(root, width=c_width, height=c_height, bg='white')
     c.pack()
 
     """ The variables below size the bar graph"""
     LeftCanvasGap = 10 #left margin
-    barWidth = 20 #Height of each bar
-    barGap = 20 #distance between each bar
-    barLengthPerUnit = 40 #Width of each bar per value
+    barWidth = 10 #Height of each bar
+    barGap = 15 #distance between each bar
+    barLengthPerUnit = 20 #Width of each bar per value
     counter = 0
 
     """List containing keys to remove"""
@@ -100,15 +128,10 @@ def printDataCallback():
 
     # A quick for loop to calculate the rectangle
     """filter out single instance data"""
-    for key in LoadData.dictionary:
+    for value in data:
 
-        DataValue = LoadData.dictionary[key]
-        """if single instance found"""
-        if DataValue == 1:
-            """increase count of total single instances"""
-            familyNameDictionary["Single Instance Families"] = familyNameDictionary["Single Instance Families"] + 1
-            singleKeyList.append(key)
-            continue
+        DataValue = value[1]
+        key = value[0]
 
         entry = counter
         # coordinates of each bar
@@ -125,29 +148,87 @@ def printDataCallback():
 
         # Draw the bar
         c.create_rectangle(x0, y0, x1, y1, fill="red")
-        print(x0,y0,x1,x0)
-        print(entry,DataValue)
+       
 
         # Put the y value above the bar
-        c.create_text(x0 + 2, y0 + 35, anchor=tk.SW, text=key+" "+str(DataValue))
+        c.create_text(x0 + 2, y0 + 25, anchor=tk.SW, text=key+" "+str(DataValue))
 
         counter = counter + 1
 
-    for key in singleKeyList:
-        """remove single instance from dictionary"""
-        LoadData.dictionary.pop(key)
+    """draw pie chart"""
+
+    """create label list"""
+    labels = []
+    """create datapiont list"""
+    dataPoints = []
+
+    i = 0 #iterator
+    maxdisplayNum = 10
+    for entry in data:
+        if i < maxdisplayNum:
+            labels.append(entry[0])
+            dataPoints.append(entry[1])
+
+        elif i == maxdisplayNum:
+            
+            labels.append("Other")
+            dataPoints.append(entry[1])
+
+        else:
+
+            lastItemSum = dataPoints[-1]
+            dataPoints.pop()
+            value = lastItemSum + entry[1]
+            dataPoints.append(value)
+
+        i = i + 1
+
+       
+
+    """create explode"""
+    explode = [0.1]
+    for number in range(maxdisplayNum):
+        explode.append(0)
+
+    fig1, ax1 = plt.subplots()
+    ax1.pie(dataPoints, explode=explode, labels=labels, autopct='%1.1f%%',
+        shadow=True, startangle=90)
+
+    ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+
+    ax1.set_title(LoadData.fileName)
+
+    plt.show()
+
+    
+    
+    
 
 """Funtion for sile save dialogue"""
 def saveFileCallback():
-    f = tkinter.filedialog.asksaveasfile(mode='w', filetypes = (("csv files","*.csv"),("all files","*.*")))
+    f = tkinter.filedialog.asksaveasfile(mode='a', filetypes = (("csv files","*.csv"),("all files","*.*")))
     if f is None: # asksaveasfile return `None` if dialog closed with "cancel".
         return
 
-    fileName = f.name + ".csv"
+    fileName = f.name
+    print("File Name = ",fileName[-4:])
+    
+    if fileName[-4:] != ".csv":
+        print("True")
+        fileName = fileName + ".csv"
+    else:
+        print("False")
 
-    with open(fileName, 'w') as file:
-        for key in LoadData.dictionary.keys():
-            file.write("%s,%s\n"%(key,LoadData.dictionary[key]))
+    data = LoadData.extractData
+    name = LoadData.fileName
+
+    
+    with open(fileName, 'a') as file:
+        file.write(name+",\n")
+        for Datatuple in data:
+            writeString = Datatuple[0] + " , " + str(Datatuple[1]) + ",\n"
+            file.write(writeString)
+        
    
   
 
@@ -159,8 +240,14 @@ loadFileButton = tk.Button(text="Load File", command = loadFileCallback) .grid(r
 """diaplay Data""" 
 displayButton = tk.Button(text="Process And Display Family Data", command = printDataCallback) .grid(row=5, column=1, sticky=W)
 
-"""Save file button"""
-saveButton = tk.Button(text="Save File", command = saveFileCallback) .grid(row=7, column=1, sticky=W)
+"""append file Button"""
+saveButton = tk.Button(text="Append to Data File", command = saveFileCallback) .grid(row=7, column=1, sticky=W)
+
+
+
+
+
+
 
 
 """appliction main loop"""
