@@ -48,23 +48,25 @@ def loadFileCallback():
                            )
     
     """Using try in case user types in unknown file or closes without choosing a file."""
-    try:
-        df = pd.read_csv(name, sep=r'[ \t]{2,}', engine='python')
-        """load File name into object"""
-        splitName = name.split("/")[-1]
-        LoadData.fileName = splitName
-        """list for holding family name and %total reads"""
-        readDataList = []
-        """interate through dataframe and pick out "Family" and "% of total reads" """
-        """parse % of total reads' pick out first sets of digits then decimal then digists turn into float"""
-        for index, row in df.iterrows():
-            value = float(re.findall("\d+\.\d+",row['% of total reads'])[0])
-            dataTuple = [row['Family'],value]
-            """load tuple into readDataList"""
-            readDataList.append(dataTuple)
+    #try:
+    df = pd.read_csv(name, sep='\t' + '\s', engine='python')
+    """load File name into object"""
+    splitName = name.split("/")[-1]
+    LoadData.fileName = splitName
+    """list for holding family name and %total reads"""
+    readDataList = []
+    """interate through dataframe and pick out "Family" and "% of total reads" """
+    """parse % of total reads' pick out first sets of digits then decimal then digists turn into float"""
+    
+    for index, row in df.iterrows():
+        
+        value = float(re.findall("\d+\.\d+",row['% of mapped reads'])[0])
+        dataTuple = [row['Family'],value]
+        """load tuple into readDataList"""
+        readDataList.append(dataTuple)
 
-    except:
-        print("Error No data loaded")
+    #except:
+        #print("Error No data loaded")
    
     DataColationDict = {}
 
@@ -100,11 +102,11 @@ def loadFileCallback():
     LoadData.extractData = sortedColateList
 
     print("File Data Loaded ",name)
+    
 
 """Print out object"""
 def printDataCallback():
     data = LoadData.extractData
-
     
     """draw bar graph windows"""
     root = tk.Tk()
@@ -125,6 +127,8 @@ def printDataCallback():
 
     """List containing keys to remove"""
     singleKeyList = []
+
+    
 
     # A quick for loop to calculate the rectangle
     """filter out single instance data"""
@@ -156,14 +160,16 @@ def printDataCallback():
         counter = counter + 1
 
     """draw pie chart"""
-
+    
     """create label list"""
     labels = []
     """create datapiont list"""
     dataPoints = []
 
+   
+
     i = 0 #iterator
-    maxdisplayNum = 10
+    maxdisplayNum = 8
     for entry in data:
         if i < maxdisplayNum:
             labels.append(entry[0])
@@ -184,7 +190,7 @@ def printDataCallback():
         i = i + 1
 
        
-
+    
     """create explode"""
     explode = [0.1]
     for number in range(maxdisplayNum):
@@ -204,7 +210,7 @@ def printDataCallback():
     
     
 
-"""Funtion for sile save dialogue"""
+"""Funtion for file save dialogue"""
 def saveFileCallback():
     f = tkinter.filedialog.asksaveasfile(mode='a', filetypes = (("csv files","*.csv"),("all files","*.*")))
     if f is None: # asksaveasfile return `None` if dialog closed with "cancel".
