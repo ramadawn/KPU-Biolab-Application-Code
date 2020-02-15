@@ -1,0 +1,70 @@
+Write an immutable function that merges the following inputs into a single list. (Feel free to use the space below or submit a link to your work.)
+
+Inputs
+
+- Original list of strings
+
+- List of strings to be added
+
+- List of strings to be removed
+
+Return
+
+- List shall only contain unique values
+
+- List shall be ordered as follows
+
+--- Most character count to least character count
+
+--- In the event of a tie, reverse alphabetical
+
+Other Notes
+
+- You can use any programming language you like
+
+- The function you submit shall be runnable
+
+For example:
+
+Original List = ['one', 'two', 'three',]
+
+Add List = ['one', 'two', 'five', 'six]
+
+Delete List = ['two', 'five']
+
+Result List = ['three', 'six', 'one']*
+
+
+
+def merg(Olist, AddedStrings, removeList):
+    
+    for element in removeList:
+        if(element in Olist):
+            Olist.remove(element)
+            
+    for element in AddedStrings:
+        if(element not in Olist):
+            Olist.append(element)
+            
+    newOlist = sorted(Olist, key=len)
+    
+    for i in range(len(newOlist)):
+        for pos in range(len(newOlist)):
+            
+            loc = pos - 1
+            
+            if(len(newOlist[loc]) == len(newOlist[loc + 1])):
+                test = min(newOlist[loc],newOlist[loc + 1])
+                if(test != newOlist[loc]):
+                    newOlist[loc + 1] = newOlist[loc]
+                    newOlist[loc] = test
+                
+            
+    
+    return newOlist        
+            
+Olist = ['one', 'two', 'three',]
+AddedStrings = ['one', 'two', 'five', 'six']
+removeList = ['two', 'five', 'one']
+print(merg(Olist,AddedStrings,removeList))
+
